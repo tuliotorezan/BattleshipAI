@@ -56,29 +56,30 @@ def PlaceShip(board, direction, x, y, shipSize):
     
 
 board = InitializeBoard(10)
-PlaceShip(board, direction = 0, x=0, y=1, shipSize = 3)
-PlaceShip(board, direction = 1, x=2, y=2, shipSize = 4)
-PlaceShip(board, direction = 0, x=5, y=2, shipSize = 5)
             
 
 
 
 ###############     Creating custom reinforced learning environment     ###############
 class CustomEnv(Env):
-    def __init__(self, enemy_board, grid_size):
+    def __init__(self, enemy_board):
         
         #board size
-        self.grid_size = grid_size
+        self.grid_size = enemy_board.shape[0]
         
         #cell state (Unknown, hit, miss)
         self.cell = {"~": 0, "X":1, "O": -1}
         
-        #setting up the board the coe will see when shooting
-        self.board = self.cell["~"]*np.ones((self.grid_size, self.grid_size), dtype="int")
+        #setting up the board you will see when shooting
+        self.board_state = self.cell["~"]*np.ones((self.grid_size, self.grid_size), dtype="int")
         
         #this is the reference map to where are the enemy ships 0 = water 1=ship, will come from external function
         self.enemy_board = enemy_board
         
+        #counting the total number of hits before winning
+        self.shotsToWin = sum(sum(self.enemy_board))
+        
+        self.done = False
         
         self.legal_actions = [] # legal cells available for shooting
         for i in range(self.grid_size):
@@ -93,21 +94,63 @@ class CustomEnv(Env):
                                      dtype=np.int)        
         
         
+        
     def step(self, action):
-        return 0
+        i = action%10
+        j = action//10
+        if self.enemy_board[i,j] == 1:
+            self.board_state[i,j] = self.cell["X"]
+            self.enemy_board[i,j] = -1
+            self.shotsToWin -= 1
+            if self.shotsToWin == 0:
+                self.done = True
+            reward = 1
+        elif self.enemy_board[i][j] == -1:
+            reward = -5
+        else:
+            self.board_state[i,j] = self.cell["O"]
+            reward = -1
+            
+        return self.board_state, reward, self.done
+    
+    
     
     def reset(self):
+        self.enemy_board = InitializeBoard(self.grid_size)
+        self.board_state = self.cell["~"]*np.ones((self.grid_size, self.grid_size), dtype="int")
+        self.shotsToWin = sum(sum(self.enemy_board))
+        self.done = False
         return 0
+    
+    
     
     def render(self, mode = "human"):
         return 0
     
-    #sets the new board state after an action
-    def set_state(self, action):
-        i,j = action
-        if self.enemy_board[i,j] == 1:
-            self.board[i,j] = self.cell["X"]
-        else:
-            self.board[i,j] = self.cell["O"]
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
