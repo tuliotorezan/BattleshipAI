@@ -5,14 +5,20 @@ Spyder Editor
 This is a temporary script file.
 """
 
-##Importing libraries
+##Importing general libraries
 import numpy as np
+import random
+#game environment libraries
 from gym import Env
 from gym.spaces import Box, Discrete
-import random
+#deep larning libraries
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import Adam
 
 
-##Creating custom reinforced learning environment
+
+###############     Creating custom reinforced learning environment     ###############
 class CustomEnv(Env):
     def __init__(self):
         self.action_space = Discrete(3)  #for battleship will probably make this a set of 2 coordinates, each, from 0-10
@@ -70,7 +76,39 @@ for episode in range(1, episodes+1):
         
         
         
+###############     Creating simple Deep Learning model     ###############
+
+states = env.observation_space.shape
+actions = env.action_space.n
+
+def build_model(states, actions):
+    model = Sequential()
+    model.add(Dense(24,activation="relu", input_shape=states))
+    model.add(Dense(24, activation="relu"))
+    model.add(Dense(actions, activation="linear"))
+    return model
+
+
+model = build_model(states, actions)
+
+model.summary()
+
         
+        
+        
+###############     Creating the agent with Keras-ReinforcementLearning     ###############
+
+
+
+
+
+
+
+
+
+
+
+
         
         
         
