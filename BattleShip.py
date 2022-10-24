@@ -7,13 +7,59 @@ Created on Mon Oct 24 10:56:18 2022
 
 ##Importing general libraries
 import numpy as np
-import random
 #game environment libraries
 from gym import Env
 from gym.spaces import Box, Discrete
 
+def InitializeBoard(boardSize):
+    board = np.zeros((boardSize,boardSize))
+    shipList = [5,4,3,3,2]
+    for shipSize in shipList:    
+        answ = False
+        while answ == False:
+            direction = np.random.randint(0,2)
+            x = np.random.randint(0, boardSize)
+            y = np.random.randint(0,boardSize)
+            answ = PlaceShip(board, direction, x, y, shipSize)
+    return board
 
+def PlaceShip(board, direction, x, y, shipSize):
+    lenX, lenY = board.shape
+    
+    if direction == "h" or direction == 0:
+        #check if a ship of this size can fit in the board beginning on position x
+        if x+shipSize > lenX:
+            return False
+        
+        #check if there is something in that position already
+        for i in range(0,shipSize):
+            if board[x+i][y] != 0:
+                return False
+        #if the space is available, then we put the ship in it
+        for i in range(0, shipSize):
+            board[x+i][y] = 1
+        return True
+            
+    if direction == "v" or direction == 1:
+        #check if a ship of this size can fit in the board beginning on position y
+        if y+shipSize > lenY:
+            return False
+        
+        #check if there is something in that position already
+        for i in range(0,shipSize):
+            if board[x][y+i] != 0:
+                return False
+        #if the space is available, then we put the ship in it
+        for i in range(0, shipSize):
+            board[x][y+i] = 1
+        return True
+    
 
+board = InitializeBoard(10)
+PlaceShip(board, direction = 0, x=0, y=1, shipSize = 3)
+PlaceShip(board, direction = 1, x=2, y=2, shipSize = 4)
+PlaceShip(board, direction = 0, x=5, y=2, shipSize = 5)
+            
 
 
 
