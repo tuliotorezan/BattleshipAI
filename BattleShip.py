@@ -7,11 +7,21 @@ Created on Mon Oct 24 10:56:18 2022
 
 ##Importing general libraries
 import numpy as np
+import random
 #game environment libraries
 from gym import Env
 from gym.spaces import Box, Discrete
+#deep larning libraries
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import Adam
+#libraries for reinforced learning
+from rl.agents import DQNAgent
+from rl.policy import BoltzmannQPolicy
+from rl.memory import SequentialMemory
 
-def InitializeBoard(boardSize):
+
+def InitializeBoard(boardSize=10):
     board = np.zeros((boardSize,boardSize))
     shipList = [5,4,3,3,2]
     for shipSize in shipList:    
@@ -54,27 +64,25 @@ def PlaceShip(board, direction, x, y, shipSize):
             board[x][y+i] = 1
         return True
     
-
-board = InitializeBoard(10)
             
 
 
 
 ###############     Creating custom reinforced learning environment     ###############
-class CustomEnv(Env):
-    def __init__(self, enemy_board):
+class BattleshipEnv(Env):
+    def __init__(self):
+        
+        #this is the reference map to where are the enemy ships 0 = water 1=ship, will come from external function
+        self.enemy_board = InitializeBoard()
         
         #board size
-        self.grid_size = enemy_board.shape[0]
+        self.grid_size = self.enemy_board.shape[0]
         
         #cell state (Unknown, hit, miss)
         self.cell = {"~": 0, "X":1, "O": -1}
         
         #setting up the board you will see when shooting
         self.board_state = self.cell["~"]*np.ones((self.grid_size, self.grid_size), dtype="int")
-        
-        #this is the reference map to where are the enemy ships 0 = water 1=ship, will come from external function
-        self.enemy_board = enemy_board
         
         #counting the total number of hits before winning
         self.shotsToWin = sum(sum(self.enemy_board))
@@ -129,11 +137,65 @@ class CustomEnv(Env):
     
         
         
+#this is simulating its playing randomly
+env = BattleshipEnv()
+episodes = 20
+for episode in range(1, episodes+1):
+    state = env.reset()
+    done = False
+    score = 0
+    shots = 0
+    
+    while not done:
+        action = env.action_space.sample()
+        board_state, reward, done = env.step(action)
+        shots +=1
+        score += reward
+        print("{}".format(board_state))
+    print("Episode:{} Score:{} Shots:{}".format(episode, score, shots))
+    
+        
+        
+       
+###############     Creating simple Deep Learning model     ###############
+
+states = env.observation_space.shape
+actions = env.action_space.n
+
+def build_model(states, actions):
+    model = Sequential()
+    model.add(Dense(256,activation="relu", input_shape=states))
+    model.add(Dense(512, activation="relu"))
+    model.add(Flatten())
+    model.add(Dense(actions, activation="linear"))
+    return model
+
+
+model = build_model(states, actions)
+
+model.summary()
+
         
         
         
-        
-        
+###############     Creating the agent with Keras-ReinforcementLearning     ###############
+
+def build_agent(model, actions):
+    policy = BoltzmannQPolicy()
+    memory = SequentialMemory(limit = 50000, window_length=2, ignore_episode_boundaries=True)
+    dqn = DQNAgent(model=model, memory = memory, policy=policy,
+                   nb_actions=actions, nb_steps_warmup=10, target_model_update=1e-2)
+    return dqn
+
+
+dqn = build_agent(model, actions)
+dqn.compile(Adam(lr=1e-3), metrics=["mae"])
+dqn.fit(env, nb_steps=60000, visualize=False, verbose = 1)
+
+
+results = dqn.test(env, nb_episodes=150, visualize=False)
+print(np.mean(results.history["episode_reward"]))
+
         
         
         
