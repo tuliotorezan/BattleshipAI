@@ -23,6 +23,7 @@ class BattleshipGame:
         pygame.key.set_repeat(500,100)
         self._load_data()
         
+        self.shotsFired = []        
         #this is the reference map to where are the enemy ships 0 = water 1=ship, will come from external function
         self.enemy_board = self.InitializeBoard()
         #board size
@@ -37,6 +38,7 @@ class BattleshipGame:
         
     def new(self):
         # initialize all variables and do all the setup for a new game
+        self.reset()
         self.all_sprites = pg.sprite.Group()
         self.target = Target(self, 2, 4)
         
@@ -44,21 +46,24 @@ class BattleshipGame:
         pass
         
             
-    def step(self, action):
+    def fire(self, action):
         i = action%10
         j = action//10
         if self.enemy_board[i,j] == 1:
             self.board_state[i,j] = self.cell["X"]
             self.enemy_board[i,j] = -1
             self.shotsToWin -= 1
+            self.shotsFired.append(Shot(self, i, j, True))
             if self.shotsToWin == 0:
                 self.done = True
+                self.playing = False
             reward = 1
         elif self.enemy_board[i][j] == -1:
             reward = -5
         else:
             self.board_state[i,j] = self.cell["O"]
-            reward = -1            
+            reward = -1  
+            self.shotsFired.append(Shot(self, i, j, False))          
         return self.board_state, reward, self.done
     
     def run (self):
@@ -98,6 +103,8 @@ class BattleshipGame:
                     self.target.move(dy=-1)
                 if event.key == pg.K_DOWN:
                     self.target.move(dy=1)
+                if event.key == pg.K_RETURN:
+                    self.fire(self.target.x+self.target.y*10)
                     
 
     
@@ -120,6 +127,12 @@ class BattleshipGame:
     def show_go_screen(self):
         pass
         
+    def reset(self):
+        self.enemy_board = self.InitializeBoard(self.grid_size)
+        self.board_state = self.cell["~"]*np.ones((self.grid_size, self.grid_size), dtype="int")
+        self.shotsToWin = sum(sum(self.enemy_board))
+        self.done = False
+        return 0
         
     def InitializeBoard(self, boardSize=10):
         board = np.zeros((boardSize,boardSize))
@@ -164,7 +177,7 @@ class BattleshipGame:
                 board[x][y+i] = 1
             return True
         
-        
+
 g = BattleshipGame()
 g.show_start_screen()
 while True:
