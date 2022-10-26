@@ -13,7 +13,7 @@ from settings import *
 from sprites import *
 
 
-class BattleshipGame:
+class BattleshipGameAI:
     def __init__(self):
         # init display
         pygame.init()
@@ -22,23 +22,25 @@ class BattleshipGame:
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(500,100)
         self._load_data()
-        
-        self.shotsFired = []        
-        #this is the reference map to where are the enemy ships 0 = water 1=ship, will come from external function
-        self.enemy_board = self.InitializeBoard()
-        #board size
-        self.grid_size = self.enemy_board.shape[0]
         #cell state (Unknown, hit, miss)
         self.cell = {"~": 0, "X":1, "O": -1}
-        #setting up the board you will see when shooting
+        self.reset()
+        
+    def reset(self):
+        self.enemy_board = self.InitializeBoard()
+        self.grid_size = self.enemy_board.shape[0]
         self.board_state = self.cell["~"]*np.ones((self.grid_size, self.grid_size), dtype="int")
-        #counting the total number of hits before winning
         self.shotsToWin = sum(sum(self.enemy_board))
         self.done = False
+        self.shotsFired = []
+        self.totalShots = 0
+        self.score = 0
+        self.new()
+        self._draw()
         
     def new(self):
         # initialize all variables and do all the setup for a new game
-        self.reset()
+        #self.reset()
         self.all_sprites = pg.sprite.Group()
         self.target = Target(self, 2, 4)
         
@@ -47,24 +49,42 @@ class BattleshipGame:
         
             
     def fire(self, action):
+        self.totalShots +=1
+        #get user input
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self._quit()
+                
+        #fire a shot
         i = action%10
         j = action//10
-        if self.enemy_board[i,j] == 1:
+        if i > 9 or j > 9:
+            reward = -5
+        elif self.enemy_board[i,j] == 1:
             self.board_state[i,j] = self.cell["X"]
             self.enemy_board[i,j] = -1
             self.shotsToWin -= 1
             self.shotsFired.append(Shot(self, i, j, True))
-            if self.shotsToWin == 0:
-                self.done = True
-                self.playing = False
-            reward = 1
+            reward = 5
         elif self.enemy_board[i][j] == -1:
             reward = -5
         else:
             self.board_state[i,j] = self.cell["O"]
             reward = -1  
-            self.shotsFired.append(Shot(self, i, j, False))          
-        return self.board_state, reward, self.done
+            self.shotsFired.append(Shot(self, i, j, False))  
+        
+        
+        self.score += reward
+        if self.shotsToWin == 0 or self.totalShots > 200:
+            self.done = True
+            self.playing = False
+            return reward, self.done, self.score
+        
+        self.dt = self.clock.tick(FPS)/1000
+        #self._events()
+        self._update()
+        self._draw()
+        return reward, self.done, self.score
     
     def run (self):
         self.playing = True
@@ -107,8 +127,6 @@ class BattleshipGame:
                     self.fire(self.target.x+self.target.y*10)
                     
 
-    
-        
     def draw_grid(self):
         for x in range(int(WIDTH/4), int(3*WIDTH/4)+1, TILESIZE):
             pygame.draw.line(self.screen, BLACK, (x,int(HEIGHT/4)), (x,int(3*HEIGHT/4)))
@@ -126,13 +144,6 @@ class BattleshipGame:
 
     def show_go_screen(self):
         pass
-        
-    def reset(self):
-        self.enemy_board = self.InitializeBoard(self.grid_size)
-        self.board_state = self.cell["~"]*np.ones((self.grid_size, self.grid_size), dtype="int")
-        self.shotsToWin = sum(sum(self.enemy_board))
-        self.done = False
-        return 0
         
     def InitializeBoard(self, boardSize=10):
         board = np.zeros((boardSize,boardSize))
@@ -178,9 +189,25 @@ class BattleshipGame:
             return True
         
 
-g = BattleshipGame()
-g.show_start_screen()
-while True:
-    g.new()
-    g.run()
-    g.show_go_screen()
+# g = BattleshipGameAI()
+# g.show_start_screen()
+# g.fire(55)
+# g.fire(54)
+# g.fire(53)
+# g.fire(52)
+# g.fire(51)
+# g.fire(56)
+# g.fire(57)
+# g.fire(58)
+# g.fire(59)
+# g.fire(60)
+# g.fire(61)
+# g.fire(45)
+# g.fire(35)
+# g.fire(25)
+# g.fire(15)
+# g.fire(65)
+# g.fire(75)
+#while True:
+#    g.new()
+#    g.run()
