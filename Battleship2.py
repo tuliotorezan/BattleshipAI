@@ -42,7 +42,7 @@ class BattleshipGameAI:
         # initialize all variables and do all the setup for a new game
         #self.reset()
         self.all_sprites = pg.sprite.Group()
-        self.target = Target(self, 2, 4)
+        self.target = Target(self, 5, 5)
         
     def _load_data(self):
         pass
@@ -59,23 +59,23 @@ class BattleshipGameAI:
         i = action%10
         j = action//10
         if i > 9 or j > 9:
-            reward = -5
+            reward = -1
         elif self.enemy_board[i,j] == 1:
             self.board_state[i,j] = self.cell["X"]
             self.enemy_board[i,j] = -1
             self.shotsToWin -= 1
             self.shotsFired.append(Shot(self, i, j, True))
-            reward = 5
+            reward = 1
         elif self.enemy_board[i][j] == -1:
-            reward = -5
+            reward = -1
         else:
             self.board_state[i,j] = self.cell["O"]
-            reward = -1  
+            reward = 0  
             self.shotsFired.append(Shot(self, i, j, False))  
         
         
         self.score += reward
-        if self.shotsToWin == 0 or self.totalShots > 200:
+        if self.shotsToWin == 0 or self.totalShots > 70:
             self.done = True
             self.playing = False
             return reward, self.done, self.score
@@ -189,25 +189,8 @@ class BattleshipGameAI:
             return True
         
 
-# g = BattleshipGameAI()
-# g.show_start_screen()
-# g.fire(55)
-# g.fire(54)
-# g.fire(53)
-# g.fire(52)
-# g.fire(51)
-# g.fire(56)
-# g.fire(57)
-# g.fire(58)
-# g.fire(59)
-# g.fire(60)
-# g.fire(61)
-# g.fire(45)
-# g.fire(35)
-# g.fire(25)
-# g.fire(15)
-# g.fire(65)
-# g.fire(75)
+####### UNCOMMENT THIS TO PLAY AS A PERSON
+#g = BattleshipGameAI()
 #while True:
-#    g.new()
+#    g.reset()
 #    g.run()
